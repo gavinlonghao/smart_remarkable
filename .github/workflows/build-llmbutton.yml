@@ -1,0 +1,41 @@
+name: Build LLM Button RM2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install ARM32 compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf
+
+      - name: Compile LLM Button
+        run: |
+          mkdir -p output
+          arm-linux-gnueabihf-gcc \
+            -O2 -shared -fPIC \
+            xovi-ext/llmbutton/main.c \
+            xovi-ext/llmbutton/xovi.c \
+            -o output/llmbutton.so \
+            -pthread -ldl
+
+      - name: Verify architecture
+        run: |
+          file output/llmbutton.so
+          arm-linux-gnueabihf-readelf -h output/llmbutton.so
+
+      - name: Upload extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: llmbutton-rm2
+          path: output/llmbutton.so
