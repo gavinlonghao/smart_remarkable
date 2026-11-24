@@ -1,0 +1,32 @@
+name: Build Smart Remarkable RM2
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        run: |
+          rustup toolchain install 1.92.0 --profile minimal
+          rustup target add --toolchain 1.92.0 armv7-unknown-linux-gnueabihf
+
+      - name: Install Cross
+        run: cargo +stable install cross --git https://github.com/cross-rs/cross --locked
+
+      - name: Build Smart Remarkable
+        run: cross +1.92.0 build --release --locked --target armv7-unknown-linux-gnueabihf --bin smart_remarkable
+
+      - name: Upload RM2 binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: smart-remarkable-rm2
+          path: target/armv7-unknown-linux-gnueabihf/release/smart_remarkable
