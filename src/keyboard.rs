@@ -236,38 +236,54 @@ impl Keyboard {
         Ok(())
     }
 
+   
     pub fn string_to_keypresses(&mut self, input: &str) -> Result<()> {
         if let Some(device) = &mut self.device {
-            // make sure we are synced before we start; this might be paranoia
-            device.emit(&[InputEvent::new(EvdevEventType::SYNCHRONIZATION.0, 0, 0)])?;
-            thread::sleep(time::Duration::from_millis(10));
+            device.emit(&[InputEvent::new(
+                EvdevEventType::SYNCHRONIZATION.0, 0, 0
+            )])?;
+
+            // Wait for the native text editor to be ready.
+            thread::sleep(time::Duration::from_millis(300));
 
             for c in input.chars() {
                 if let Some(&(key, shift)) = self.key_map.get(&c) {
                     if shift {
-                        // Press Shift
-                        device.emit(&[InputEvent::new(EvdevEventType::KEY.0, EvdevKey::KEY_LEFTSHIFT.code(), 1)])?;
+                        device.emit(&[InputEvent::new(
+                            EvdevEventType::KEY.0,
+                            EvdevKey::KEY_LEFTSHIFT.code(), 1
+                        )])?;
+                        thread::sleep(time::Duration::from_millis(20));
                     }
 
-                    // Press key
-                    device.emit(&[InputEvent::new(EvdevEventType::KEY.0, key.code(), 1)])?;
+                    // Press and hold the key.
+                    device.emit(&[InputEvent::new(
+                        EvdevEventType::KEY.0, key.code(), 1
+                    )])?;
 
-                    // Release key
-                    device.emit(&[InputEvent::new(EvdevEventType::KEY.0, key.code(), 0)])?;
+                    thread::sleep(time::Duration::from_millis(25));
+
+                    // Release the key.
+                    device.emit(&[InputEvent::new(
+                        EvdevEventType::KEY.0, key.code(), 0
+                    )])?;
 
                     if shift {
-                        // Release Shift
-                        device.emit(&[InputEvent::new(EvdevEventType::KEY.0, EvdevKey::KEY_LEFTSHIFT.code(), 0)])?;
+                        device.emit(&[InputEvent::new(
+                            EvdevEventType::KEY.0,
+                            EvdevKey::KEY_LEFTSHIFT.code(), 0
+                        )])?;
                     }
 
-                    // Sync event
-                    device.emit(&[InputEvent::new(EvdevEventType::SYNCHRONIZATION.0, 0, 0)])?;
-                    thread::sleep(time::Duration::from_millis(10));
+                    // Allow xochitl to process the character.
+                    thread::sleep(time::Duration::from_millis(35));
                 }
             }
         }
+
         Ok(())
     }
+
 
     fn key_cmd(&mut self, button: &str, shift: bool) -> Result<()> {
         self.key_down(EvdevKey::KEY_LEFTCTRL)?;
